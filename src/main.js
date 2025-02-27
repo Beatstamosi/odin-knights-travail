@@ -1,106 +1,110 @@
-/*
-INFO:
-- each square is a vertex (vertices)
-- [startCord, endCord] --> is an edge
-- adjacency list
-    - [ [{ coordinates: [0,0], edges: [10, 17]}],
-        [{ coordinates: [0,1], edges: [11, 16, 18]}],
-
-
-        ]
-
-- get starting coordinates as [x, y]
-- set variable amountMoves = 0;
-
-- function calculate each possible move
-    - [x - 2, y - 1]
-    - [x - 2, y + 1]
-    - [x + 2, y - 1]
-    - [x + 2, y + 1]
-    - [x - 1, y + 2]
-    - [x - 1, y - 2]
-    - [x + 1, y + 2]
-    - [x + 1, y - 2]
-    --> as long as x && y are between 0 - 7; otherwise no allowed move (square outside field)
-
-- run BDF for each starting position
-    - if startCord === endCords return amountMoves?
-    - if startCord != endCords
-        - calculate each possible move
-        - add them to queue
-        - update amountMoves + 1?
-
-
-*/
-
-
 /* A Queue object for queue-like functionality over JavaScript arrays. */
 class Queue {
-    constructor() {
-        this.items = [];
-    }
-    enqueue(obj) {
-        this.items.push(obj);
-    }
-    dequeue() {
-        return this.items.shift();
-    }
-    isEmpty() {
-        return this.items.length === 0;
-    }
+  constructor() {
+    this.items = [];
+  }
+  enqueue(obj) {
+    this.items.push(obj);
+  }
+  dequeue() {
+    return this.items.shift();
+  }
+  isEmpty() {
+    return this.items.length === 0;
+  }
 }
 
-function knightMoves(start, end) {
-    
-    /*
-    1) if start or end out of bounds return error
+export default function knightMoves(start, end) {
+  // Check for correct input
+  if (!Array.isArray(start) || !Array.isArray(end)) {
+    throw console.error(
+      "Start and End needs to be arrays with coordinates, like [x, y]",
+    );
+  }
 
-    2) set empty array for info
+  const checkBounds = function (coord) {
+    return coord < 0 || coord > 7;
+  };
 
-    3) Create queue
+  if (start.some(checkBounds) || end.some(checkBounds)) {
+    throw console.error("Coordinates have to be between 0 and 7.");
+  }
 
-    4) Add start point to queue
-        convert start to index
-        initialize with object
-            info[startIndex].distance = 0;
-            info[startIndex].predecessor = null;
-            info[startIndex].coordinates = start;
+  // prepare loop and initiate graph with starting position
+  let sequence = [];
 
-    5) while(!queue.isEmpty())
-        let position = get first value from queue
-        if position === end break;
+  let queue = new Queue();
 
-        calculate possible moves from position --> return as list
-        convert positions into index of graph list
-        match coordinates from moves with index
+  let startIndex = calculateIndexFromCoordinates(start);
+  let endIndex = calculateIndexFromCoordinates(end);
 
-        for each position
-           if (!info.hasOwnProperty(position))
-                info[position] = {}; // initialize empty object
-                info[position].distance = position.distance + 1;
-                info[position].predecessor = position;
-                info[position].coordinates = coordinates;
-                queue.enqueue(position);
+  sequence[startIndex] = {};
+  sequence[startIndex].predecessor = null;
+  sequence[startIndex].coordinates = start;
 
+  queue.enqueue(startIndex);
 
-    6) get result from while loop
+  // start BFS search
+  while (!queue.isEmpty()) {
+    let position = queue.dequeue();
 
-    7) get distance from end node
+    if (position == endIndex) break;
 
-    8) loop through predecessors until predecessor === null
-        add to list steps
-        reverse list steps
-        calculate coordinates
+    let nextMoves = calculateNextMoves(sequence[position].coordinates);
+    let nextMovesIndexes = nextMoves.map((move) => calculateIndexFromCoordinates(move));
 
+    for (let i = 0; i < nextMovesIndexes.length; i++) {
+      if (!sequence.hasOwnProperty(nextMovesIndexes[i])) {
+        sequence[nextMovesIndexes[i]] = {};
+        sequence[nextMovesIndexes[i]].predecessor = sequence[position];
+        sequence[nextMovesIndexes[i]].coordinates = nextMoves[i];
+        queue.enqueue(nextMovesIndexes[i]);
+      }
+    }
+  }
 
+  // export path by backtracking predecessors
+  let path = [];
+  let curr = sequence[endIndex];
 
-    Get index for graph list
-        index = r * 8 + c of each square in adj list
-        Row (r) is the integer division of index by 8: r = i // 8
-        Column (c) is the remainder of the division by 8: c = i % 8
+  while (curr !== null) {
+    path.unshift(curr.coordinates);
+    curr = curr.predecessor;
+  }
 
+  // display answer in console
+  console.log(`You made it in ${path.length - 1} moves! Your path is:`);
+  path.forEach((move) => {
+    console.log(move);
+  });
+}
 
-    */
+function calculateIndexFromCoordinates(array) {
+  return array[0] * 8 + array[1];
+}
 
+function calculateNextMoves(position) {
+  const moves = [
+    [-2, -1],
+    [-2, 1],
+    [2, -1],
+    [2, 1], // Horizontal moves
+    [-1, 2],
+    [-1, -2],
+    [1, 2],
+    [1, -2], // Vertical moves
+  ];
 
+  const validMoves = [];
+
+  for (let move of moves) {
+    let newX = position[0] + move[0];
+    let newY = position[1] + move[1];
+
+    if (newX >= 0 && newX <= 7 && newY >= 0 && newY <= 7) {
+      validMoves.push([newX, newY]);
+    }
+  }
+
+  return validMoves;
 }
